@@ -1,0 +1,34 @@
+services:
+
+  firefly:
+    image: ipac/firefly:latest
+    container_name: firefly
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./firefly-upload:/var/www/html/storage/upload
+    environment:
+      - APP_KEY=EnEsteTextoIrían32Caracteres!!!!
+      - APP_ENV=local
+      - DB_CONNECTION=sqlite
+    restart: always
+
+  budgetzero:
+    image: budgetzero/budgetzero:latest
+    container_name: budgetzero
+    ports:
+      - "8090:3000"
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  papermerge:
+    image: papermerge/papermerge:latest
+    container_name: papermerge
+    ports:
+      - "8091:8000"
+    volumes:
+      - ./papermerge-data:/data
+    environment:
+      - PAPERMERGE__SECURITY__SECRET_KEY=UnTextoSuperSecretoYClave123!
+    restart: always

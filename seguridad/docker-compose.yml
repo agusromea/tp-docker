@@ -1,0 +1,64 @@
+services:
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    volumes:
+      - ./vw-data:/data
+    ports:
+      - "8081:80"
+    restart: always
+
+
+  npm:
+    image: jlesage/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    ports:
+      - '81:81'   # Panel de administración web de NPM
+      - '80:80'   # Tráfico HTTP normal
+      - '443:443' # Tráfico HTTPS seguro
+    volumes:
+      - ./npm-data:/data
+      - ./npm-letsencrypt:/etc/letsencrypt
+    restart: always
+
+
+  wireguard:
+    image: linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Argentina/Buenos_Aires
+      - SERVERPORT=51820
+      - PEERS=1 # Te genera automáticamente 1 perfil para conectar tu celular
+    ports:
+      - "51820:51820/udp"
+    volumes:
+      - ./wg-config:/config
+    restart: always
+
+
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    volumes:
+      - ./tailscale-data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: always
+
+
+  pocketid:
+    image: ghcr.io/pocket-id/pocket-id:latest
+    container_name: pocket-id
+    ports:
+      - '8086:8080'
+    volumes:
+      - ./pocketid-data:/app/data
+    restart: always

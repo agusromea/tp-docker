@@ -1,0 +1,45 @@
+services:
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    restart: always  
+
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    command: serve
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./diun-data:/data
+    environment:
+      - DIUN_WATCH_WORKERS=2
+      - DIUN_WATCH_SCHEDULE=0 */6 * * *
+      - DIUN_PROVIDERS_DOCKER=true
+    restart: always
+
+  composerize:
+    image: oaklight/composerize:latest 
+    container_name: composerize
+    ports:
+      - "8082:80" 
+    restart: always
+
+  dodge:
+    image: junorr/dodge:latest 
+    container_name: dodge
+    ports:
+      - "8085:80" 
+    restart: always
+
+  beszel:
+    image: 'henrygd/beszel:latest'
+    container_name: beszel
+    ports:
+      - '8084:8090'
+    volumes:
+      - ./beszel-data:/beszel-data
+    restart: always

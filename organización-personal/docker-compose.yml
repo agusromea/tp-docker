@@ -1,0 +1,59 @@
+services:
+
+  homer:
+    image: b4bz/homer:latest
+    container_name: homer
+    volumes:
+      - ./homer_assets:/www/assets
+    ports:
+      - "8080:8080"
+    restart: always
+
+  mealie:
+    image: hkotel/mealie:latest
+    container_name: mealie
+    ports:
+      - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    restart: always
+
+  photoprism:
+    image: photoprism/photoprism:latest
+    container_name: photoprism
+    restart: unless-stopped
+    ports:
+      - "2342:2342"
+    environment:
+      PHOTOPRISM_ADMIN_PASSWORD: "adminpassword123"
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "mariadb:3306"
+      PHOTOPRISM_DATABASE_NAME: "photoprism"
+      PHOTOPRISM_DATABASE_USER: "photoprism"
+      PHOTOPRISM_DATABASE_PASSWORD: "DatabasePassword"
+    volumes:
+      - ./originals:/photoprism/originals
+      - ./storage:/photoprism/storage
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
+    restart: unless-stopped
+    volumes:
+      - ./database:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "RootPassword"
+      MYSQL_DATABASE: "photoprism"
+      MYSQL_USER: "photoprism"
+      MYSQL_PASSWORD: "DatabasePassword"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
