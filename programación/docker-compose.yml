@@ -1,40 +1,71 @@
-services:
-  db:
-    image: mysql:latest
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: empleados
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-  web:
-    build: 
-      context: .
-      dockerfile_inline: |
-        FROM php:8.2-apache
-        RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
-    container_name: apache_php    
-    ports:
-      - "8080:80"
-    volumes:
-      - ./www:/var/www/html
-    depends_on:
-      - db
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: phpmyadmin
-    environment:
-      PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: root
-    ports:
-      - "8081:80"
-    depends_on:
-      - db
+version: '3.8'
 
-volumes:
-  db_data:
+services:
+
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Argentina/Buenos_Aires
+      - PASSWORD=admin 
+      - SUDO_PASSWORD=admin 
+    volumes:
+      - ./data/code-server:/config
+      - ./workspace:/workspace # Carpeta compartida con Jupyter
+    ports:
+      - "8443:8443"
+    restart: unless-stopped
+
+
+  jupyter:
+    image: jupyter/datascience-notebook:latest
+    container_name: jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=admin
+    volumes:
+      - ./workspace:/home/jovyan/work # Carpeta compartida con Code-server
+    ports:
+      - "8888:8888"
+    restart: unless-stopped
 
   
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"            # Puerto principal de la API de LocalStack
+      - "4510-4559:4510-4559"  # Rango de puertos para servicios adicionales
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Permite a LocalStack crear contenedores (ej. Lambda)
+      - ./data/localstack:/var/lib/localstack
+    restart: unless-stopped
+
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Necesario para leer los logs de Docker
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    restart: unless-stopped
